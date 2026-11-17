@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <script>if (sessionStorage.getItem("alstick_ok") !== "1") location.replace("index.html");</script>
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-<script src="onesignal.js?v=4"></script>
+<script src="onesignal.js?v=5"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { height: 100%; background: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #111; }
@@ -21,7 +21,7 @@
   h1 { font-size: 22px; font-weight: 600; }
   button { padding: 12px 22px; font-size: 15px; border: 1.5px solid #111; border-radius: 12px; background: #fff; cursor: pointer; }
   button:active { background: #111; color: #fff; }
-  #status { font-size: 13px; color: #666; }
+  #status { font-size: 13px; color: #666; max-width: 520px; word-break: break-word; }
 </style>
 </head>
 <body>
@@ -34,17 +34,32 @@
   const btn = document.getElementById("notify");
   const say = t => { status.textContent = t; };
 
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  async function diag(OneSignal) {
+    const regs = navigator.serviceWorker ? await navigator.serviceWorker.getRegistrations() : [];
+    const ps = OneSignal.User.PushSubscription;
+    return "init: " + (window.__osError ? "ERROR " + window.__osError : (window.__osReady ? "ok" : "pending")) +
+      " | permission: " + Notification.permission +
+      " | optedIn: " + ps.optedIn +
+      " | id: " + (ps.id || "none") +
+      " | token: " + (ps.token ? "yes" : "none") +
+      " | SW: " + (regs.map(r => r.scope).join(", ") || "none");
+  }
+
   function subscribe() {
     say("Subscribe ho raha hai…");
     const timer = setTimeout(() => say("OneSignal load nahi hua — page reload karke dobara try karein"), 10000);
     window.OneSignalDeferred.push(async OneSignal => {
+      clearTimeout(timer);
       try {
+        if (window.__osError) { say("OneSignal init error: " + window.__osError); return; }
         await OneSignal.User.PushSubscription.optIn();
-        clearTimeout(timer);
-        say(OneSignal.User.PushSubscription.optedIn ? "Notifications ON ✓" : "Subscribe nahi hua, dobara try karein");
+        // Server se subscription ID aane me kuch second lag sakte hain
+        for (let i = 0; i < 15 && !(OneSignal.User.PushSubscription.id && OneSignal.User.PushSubscription.token); i++) await sleep(1000);
+        const ok = OneSignal.User.PushSubscription.id && OneSignal.User.PushSubscription.token;
+        say((ok ? "Notifications ON ✓  " : "Subscribe poora nahi hua.  ") + "[" + await diag(OneSignal) + "]");
       } catch (e) {
-        clearTimeout(timer);
-        say("Error: " + (e && e.message ? e.message : e));
+        say("Error: " + (e && e.message ? e.message : e) + "  [" + await diag(OneSignal).catch(() => "") + "]");
       }
     });
   }

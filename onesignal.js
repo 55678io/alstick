@@ -11,11 +11,17 @@ OneSignalDeferred.push(async function (OneSignal) {
     console.warn("OneSignal App ID abhi set nahi hai (onesignal.js)");
     return;
   }
-  await OneSignal.init({
-    appId: ONESIGNAL_APP_ID,
-    safari_web_id: SAFARI_WEB_ID,
-    serviceWorkerPath: BASE.slice(1) + "OneSignalSDKWorker.js",
-    serviceWorkerParam: { scope: BASE },
-    allowLocalhostAsSecureOrigin: true,
-  });
+  try {
+    await OneSignal.init({
+      appId: ONESIGNAL_APP_ID,
+      safari_web_id: SAFARI_WEB_ID,
+      serviceWorkerPath: BASE.slice(1) + "OneSignalSDKWorker.js",
+      serviceWorkerParam: { scope: BASE },
+      allowLocalhostAsSecureOrigin: true,
+    });
+    window.__osReady = true;
+  } catch (e) {
+    window.__osError = (e && e.message) ? e.message : String(e);
+    console.error("OneSignal init error:", e);
+  }
 });
