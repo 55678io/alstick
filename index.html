@@ -19,7 +19,8 @@
 
   /* Splash logo animation */
   .logo { font-size: 44px; font-weight: 800; letter-spacing: -1px; color: #111; }
-  #splash .logo { animation: logoIn 1.6s cubic-bezier(.2,.8,.2,1) both; }
+  .splash-logo { animation: logoIn 1.6s cubic-bezier(.2,.8,.2,1) both; }
+  img.splash-logo { width: 160px; max-width: 45vw; height: auto; }
   @keyframes logoIn {
     0%   { opacity: 0; transform: scale(.3) rotate(-12deg); }
     60%  { opacity: 1; transform: scale(1.08) rotate(2deg); }
@@ -43,7 +44,7 @@
 </style>
 </head>
 <body>
-  <div id="splash" class="screen"><div class="logo">Alstick</div></div>
+  <div id="splash" class="screen"><img class="splash-logo" src="Buku.png" alt="Alstick" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'logo splash-logo',textContent:'Alstick'}))"></div>
 
   <div id="login" class="screen hidden">
     <h1>Enter your 6-digit PIN</h1>
