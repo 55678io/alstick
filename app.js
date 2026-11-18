@@ -13,7 +13,7 @@
   // Header
   const header = document.createElement("header");
   header.innerHTML =
-    '<a href="home.html" aria-label="Home"><img class="brand" src="Boku.png" alt="Alstick"></a>' +
+    '<a href="home.html" aria-label="Home"><img class="brand" src="Boku.jpeg" alt="Alstick"></a>' +
     '<button class="menu-btn" id="menuBtn" aria-label="Open menu" aria-controls="drawer" aria-expanded="false"><span></span><span></span><span></span></button>';
   document.body.prepend(header);
   header.querySelector(".brand").onerror = function () {

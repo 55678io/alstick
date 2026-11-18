@@ -1,7 +1,7 @@
 // Loads the report numbers from the editable block at the top of index.html,
 // so changing them there updates every page. Falls back to the defaults below.
 (function () {
-  const DEFAULTS = { reportFor: "XYZ", hacker: 189, virus: 156, securityLevel: 24, attempts: 2115 };
+  const DEFAULTS = { reportFor: "Virgil Weber", hacker: 189, virus: 156, securityLevel: 24, attempts: 2115 };
   let d = Object.assign({}, DEFAULTS);
   try {
     const xhr = new XMLHttpRequest();
