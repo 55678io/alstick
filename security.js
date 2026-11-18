@@ -129,14 +129,15 @@
       const picks = new Set(); while (picks.size < total) picks.add((Math.random() * cells.length) | 0);
       picks.forEach(i => { cells[i].bad = true; cells[i].name = NAMES[(Math.random() * NAMES.length) | 0]; cells[i].path = PATHS[(Math.random() * PATHS.length) | 0] + Math.random().toString(36).slice(2, 8) + ".bin"; });
       beam = 0; removed = 0; phase = "scan";
+      cap.textContent = "Scanning\u2026 0/" + total + " removed";
       log("Full system scan started", "ok");
     }
     reset();
     canvasLoop(el.querySelector(".sec-canvas"), s => {
       const { ctx, W, H } = s;
       const C = 18, R = 7, gx = W * 0.06, gy = H * 0.14, gw = W * 0.88, gh = H * 0.72, cw = gw / C, ch = gh / R;
-      if (phase === "scan") beam += reduceMotion ? 0.001 : 0.0042;
-      if (beam >= 1 && phase === "scan") { phase = "done"; hold = 160; log("Scan complete — " + removed + "/" + total + " threats removed. System clean", "ok"); }
+      if (phase === "scan" && beam < 1) beam += reduceMotion ? 0.001 : 0.0042;
+      if (beam >= 1 && phase === "scan" && !cells.some(c => c.state === "found")) { phase = "done"; cap.textContent = "Removed " + removed + "/" + total + " \u2014 system clean"; hold = 160; log("Scan complete — " + removed + "/" + total + " threats removed. System clean", "ok"); }
       if (phase === "done" && --hold <= 0) reset();
       const bx = gx + gw * Math.min(beam, 1);
       cells.forEach(cl => {
