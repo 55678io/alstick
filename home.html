@@ -13,7 +13,7 @@
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 <script src="onesignal.js?v=8"></script>
 <link rel="stylesheet" href="app.css?v=11">
-<link rel="stylesheet" href="report.css?v=5">
+<link rel="stylesheet" href="report.css?v=8">
 <style>
   main.home { padding: 0; display: block; }
   .hero { position: relative; height: 56vh; min-height: 340px; border-bottom: 1px solid #000; }
@@ -43,25 +43,24 @@
 <body>
 <main class="home">
   <section class="hero">
-    <canvas id="net" aria-label="Animated 3D network globe"></canvas>
+    <canvas id="net" aria-label="Animated network globe"></canvas>
     <div class="hero-tag mono"><b>ALSTICK</b> &middot; NETWORK OVERVIEW &middot; DRAG TO ROTATE</div>
   </section>
 
   <div class="report" style="padding-top:4px">
+    <div class="r-person" style="margin-top:18px"><div class="r-person-k mono">REPORT FOR</div><div class="r-person-name" id="reportFor"></div></div>
     <div class="sec-title mono">STATUS</div>
     <div class="status mono">
       <div><div class="s-label">NETWORK</div><div class="s-value"><span class="dot" id="netDot"></span><span id="netText">&mdash;</span></div></div>
       <div><div class="s-label">NOTIFICATIONS</div><div class="s-value"><span class="dot" id="ntfDot"></span><span id="ntfText">Off</span></div></div>
-      <div><div class="s-label">LOCAL TIME</div><div class="s-value" id="clock">&mdash;</div></div>
+      <div><div class="s-label">CUPERTINO, CA</div><div class="s-value" id="clock">&mdash;</div></div>
     </div>
-
-    <div class="sec-title mono">DATA CENTER</div>
-    <section class="panel dark"><div class="panel-label mono">3D SERVER RACKS</div>
-      <canvas id="servers" aria-label="Animated 3D server racks"></canvas>
-      <div class="panel-foot mono"><span>RACKS 6 &middot; COLD AISLE</span><span>DRAG TO ROTATE</span></div></section>
 
     <div class="sec-title mono">LIVE SECURITY</div>
     <section id="secmods"></section>
+
+    <section id="metrics"></section>
+    <section id="dc"></section>
 
     <div class="sec-title mono">REPORTS</div>
     <div class="links">
@@ -72,10 +71,11 @@
   </div>
 </main>
 <script src="app.js?v=11"></script>
-<script src="stats.js?v=3"></script>
+<script src="stats.js?v=5"></script>
 <script src="viz3d.js?v=4"></script>
 <script src="network.js?v=3"></script>
-<script src="security.js?v=5"></script>
+<script src="security.js?v=6"></script>
+<script src="sections.js?v=1"></script>
 <script>
   // Network status (from the browser)
   const netDot = document.getElementById("netDot"), netText = document.getElementById("netText");
@@ -94,18 +94,19 @@
     ps.addEventListener("change", e => setNtf(!!(e.current && e.current.optedIn)));
   });
 
-  // Live clock
-  const clock = document.getElementById("clock");
-  const tick = () => { clock.textContent = new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }); };
-  tick(); setInterval(tick, 10000);
+  // Cupertino, CA clock
+  Sections.clock(document.getElementById("clock"), false);
+
+  document.getElementById("reportFor").textContent = window.ALSTICK_REPORT_FOR || "";
 
   // Live security modules
   Sec.mount(document.getElementById("secmods"));
 
-  Viz.serverRoom(document.getElementById("servers"));
+  Sections.metrics(document.getElementById("metrics"));
+  Sections.datacenter(document.getElementById("dc"));
 
   // Report periods
-  const now = new Date(), fmt = (d, o) => d.toLocaleDateString("en-US", o);
+  const now = Sections.cupertinoNow(), fmt = (d, o) => d.toLocaleDateString("en-US", o);
   const start = new Date(now); start.setDate(now.getDate() - now.getDay());
   const end = new Date(start); end.setDate(start.getDate() + 6);
   document.getElementById("p-d").textContent = fmt(now, { weekday: "short", month: "short", day: "numeric" });

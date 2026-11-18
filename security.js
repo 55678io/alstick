@@ -4,7 +4,8 @@
   const S = window.ALSTICK_STATS;
   const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const pad = n => String(n).padStart(2, "0");
-  const stamp = () => { const d = new Date(); return pad(d.getHours()) + ":" + pad(d.getMinutes()) + ":" + pad(d.getSeconds()); };
+  // Log timestamps in Cupertino, CA time
+  const stamp = () => new Date().toLocaleTimeString("en-GB", { timeZone: "America/Los_Angeles", hour12: false });
   // Addresses from the documentation-only ranges (RFC 5737), never real hosts
   const ip = () => ["203.0.113.", "198.51.100.", "192.0.2."][(Math.random() * 3) | 0] + (2 + ((Math.random() * 250) | 0));
 

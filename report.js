@@ -2,7 +2,7 @@
 (function () {
   const kind = window.REPORT_KIND || "daily";
   const S = window.ALSTICK_STATS;
-  const now = new Date();
+  const now = Sections.cupertinoNow();   // dates follow Cupertino, CA time
   const fmt = (d, o) => d.toLocaleDateString("en-US", o);
 
   const KINDS = {
@@ -26,34 +26,23 @@
   main.className = "report";
   main.innerHTML =
     '<nav class="tabs">' + Object.entries(KINDS).map(([k, v]) => '<a href="' + v.href + '"' + (k === kind ? ' class="active"' : "") + ">" + v.tab + "</a>").join("") + "</nav>" +
-    '<div class="r-head"><div><div class="r-title">' + KINDS[kind].title + '</div><div class="r-period">' + period + "</div></div>" +
-    '<div class="r-meta mono"><span class="chip"><i></i>NETWORK SCAN</span><div style="margin-top:6px">Generated ' +
-    now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) + "</div></div></div>" +
+    '<div class="r-person"><div class="r-person-k mono">REPORT FOR</div><div class="r-person-name">' + (window.ALSTICK_REPORT_FOR || "") + "</div></div>" +
+    '<div class="r-head"><div><div class="r-title">' + KINDS[kind].title + '</div>' +
+    '<div class="r-period">' + period + "</div></div>" +
+    '<div class="r-meta mono"><span class="chip"><i></i>CUPERTINO, CA</span><div class="r-clock" id="cupClock"></div></div></div>' +
 
     '<section id="secmods"></section>' +
-    '<section class="panel"><div class="panel-label mono">3D NETWORK SCAN MODEL</div>' +
-    '<canvas id="scan" aria-label="Animated 3D network scan model"></canvas>' +
-    '<div class="panel-foot mono"><span>LAYERS 3 · NODES 25</span><span id="scanPct">SCAN 0%</span></div></section>' +
+    '<section id="metrics"></section>' +
+    '<section id="dc"></section>' +
+    '<section class="panel"><div class="panel-label mono">NETWORK SCAN</div>' +
+    '<canvas id="scan" aria-label="Animated network scan model"></canvas>' +
+    '<div class="panel-foot mono"><span>LAYERS 3 \u00b7 NODES 25</span><span id="scanPct">SCAN 0%</span></div></section>';
 
-    '<section class="panel dark"><div class="panel-label mono">DATA CENTER \u00b7 3D SERVER RACKS</div>' +
-    '<canvas id="servers" aria-label="Animated 3D server racks"></canvas>' +
-    '<div class="panel-foot mono"><span>RACKS 6 \u00b7 COLD AISLE</span><span>DRAG TO ROTATE</span></div></section>' +
-
-    
-
-    '<section class="panel"><div class="panel-title mono">3D METRICS MODEL</div>' +
-    '<canvas id="bars" aria-label="3D bar model of H, V and A"></canvas>' +
-    '<div class="panel-foot mono"><span>DRAG TO ROTATE</span><span>' + S.SL.label + " " + S.SL.value + (S.SL.unit || "") + "</span></div></section>";
-
-  // 3D visuals
-  Viz.scanModel(document.getElementById("scan"));
-  Viz.serverRoom(document.getElementById("servers"));
+  Sections.clock(document.getElementById("cupClock"), true);
   Sec.mount(document.getElementById("secmods"));
-  Viz.bars(document.getElementById("bars"), [
-    { label: "H", value: S.H.value, color: "cyan" },
-    { label: "V", value: S.V.value, color: "rose" },
-    { label: "A", value: S.A.value, color: "violet" },
-  ]);
+  Sections.metrics(document.getElementById("metrics"));
+  Sections.datacenter(document.getElementById("dc"));
+  Viz.scanModel(document.getElementById("scan"));
 
   // Scan progress readout (follows the moving scan plane)
   const pct = document.getElementById("scanPct");
