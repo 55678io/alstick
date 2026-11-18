@@ -119,6 +119,7 @@
   function virusScan(el) {
     const log = logger(el.querySelector(".sec-log"), opts_lines());
     const total = S.V.value;
+    const batch = Math.min(total, 7);   // threats shown being removed in each scan pass
     const NAMES = ["Trojan.Agent", "Worm.Autorun", "Backdoor.Generic", "Ransom.Locker", "Spyware.Keylog", "Adware.Bundler", "Rootkit.Hidden"];
     const PATHS = ["/usr/lib/", "/var/tmp/", "/home/user/Downloads/", "/opt/app/bin/", "/etc/cron.d/", "/srv/www/uploads/"];
     let cells = [], beam = 0, removed = 0, phase = "scan", hold = 0;
@@ -126,10 +127,10 @@
     function reset() {
       const C = 18, R = 7; cells = [];
       for (let r = 0; r < R; r++) for (let c = 0; c < C; c++) cells.push({ c, r, state: "idle", k: 0 });
-      const picks = new Set(); while (picks.size < total) picks.add((Math.random() * cells.length) | 0);
+      const picks = new Set(); while (picks.size < batch) picks.add((Math.random() * cells.length) | 0);
       picks.forEach(i => { cells[i].bad = true; cells[i].name = NAMES[(Math.random() * NAMES.length) | 0]; cells[i].path = PATHS[(Math.random() * PATHS.length) | 0] + Math.random().toString(36).slice(2, 8) + ".bin"; });
-      beam = 0; removed = 0; phase = "scan";
-      cap.textContent = "Scanning\u2026 0/" + total + " removed";
+      beam = 0; removed = total - batch; phase = "scan";
+      cap.textContent = "Scanning\u2026 " + removed + "/" + total + " removed";
       log("Full system scan started", "ok");
     }
     reset();
