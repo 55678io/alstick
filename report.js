@@ -24,7 +24,7 @@
 
   const tile = (key, canvasId) => {
     const s = S[key];
-    return '<div class="stat">' +
+    return '<div class="stat c-' + key.toLowerCase() + '">' +
       '<canvas id="' + canvasId + '"></canvas>' +
       '<div class="stat-label mono">' + s.label + '</div>' +
       '<div class="stat-value mono"><span data-count="' + s.value + '">0</span>' + (s.unit ? "<small>" + s.unit + "</small>" : "") + "</div>" +
@@ -52,14 +52,14 @@
 
   // 3D visuals
   Viz.scanModel(document.getElementById("scan"));
-  Viz.wire(document.getElementById("w-h"), "cube");
-  Viz.wire(document.getElementById("w-v"), "octa", "red");
-  Viz.gauge(document.getElementById("w-sl"), S.SL.value);
-  Viz.wire(document.getElementById("w-a"), "icosa");
+  Viz.wire(document.getElementById("w-h"), "cube", "cyan");
+  Viz.wire(document.getElementById("w-v"), "octa", "rose");
+  Viz.gauge(document.getElementById("w-sl"), S.SL.value, "green");
+  Viz.wire(document.getElementById("w-a"), "icosa", "violet");
   Viz.bars(document.getElementById("bars"), [
-    { label: "H", value: S.H.value },
-    { label: "V", value: S.V.value },
-    { label: "A", value: S.A.value },
+    { label: "H", value: S.H.value, color: "cyan" },
+    { label: "V", value: S.V.value, color: "rose" },
+    { label: "A", value: S.A.value, color: "violet" },
   ]);
 
   // Count-up numbers and bars

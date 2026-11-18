@@ -103,6 +103,21 @@
   const depthAlpha = z => 0.12 + ((z + 1) / 2) * 0.88; // back faint, front strong
   let time = 0;
 
+  // Colour palette for node types
+  const PALETTE = ["37,99,235", "6,182,212", "139,92,246", "16,185,129", "245,158,11", "244,63,94"];
+  const WEIGHTS = [0, 0, 0, 1, 1, 1, 2, 2, 3, 4, 5];
+  nodes.forEach((n, i) => { n.c = PALETTE[WEIGHTS[(i * 7) % WEIGHTS.length]]; n.hub = i % 9 === 0; });
+
+  // Lit 3D sphere (highlight top-left, darker rim)
+  function ball(x, y, r, rgb, a) {
+    const g = ctx.createRadialGradient(x - r * 0.35, y - r * 0.4, r * 0.1, x, y, r);
+    g.addColorStop(0, "rgba(255,255,255," + a + ")");
+    g.addColorStop(0.35, "rgba(" + rgb + "," + a + ")");
+    g.addColorStop(1, "rgba(" + rgb.split(",").map(v => Math.round(v * 0.55)).join(",") + "," + a + ")");
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+  }
+
   function frame() {
     time += 1;
     if (!dragging) {
@@ -113,86 +128,133 @@
     }
     const cy = Math.cos(rotY), sy = Math.sin(rotY), cx = Math.cos(rotX), sx = Math.sin(rotX);
     const breathe = 1 + Math.sin(time * 0.01) * 0.015;
+    const pr = q => project(q, cy, sy, cx, sx, breathe);
+    const Rs = R * breathe * 3.2 / Math.sqrt(3.2 * 3.2 - 1); // on-screen sphere silhouette radius
 
     ctx.clearRect(0, 0, W, H);
 
-    // Soft halo + orbit rings
-    const g = ctx.createRadialGradient(W / 2, H / 2, R * 0.2, W / 2, H / 2, R * 1.35);
-    g.addColorStop(0, "rgba(0,0,0,0.035)");
-    g.addColorStop(1, "rgba(0,0,0,0)");
+    // Atmosphere glow
+    let g = ctx.createRadialGradient(W / 2, H / 2, Rs * 0.92, W / 2, H / 2, Rs * 1.3);
+    g.addColorStop(0, "rgba(56,189,248,0.28)");
+    g.addColorStop(0.4, "rgba(99,102,241,0.10)");
+    g.addColorStop(1, "rgba(99,102,241,0)");
     ctx.fillStyle = g;
-    ctx.beginPath(); ctx.arc(W / 2, H / 2, R * 1.35, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(W / 2, H / 2, Rs * 1.3, 0, Math.PI * 2); ctx.fill();
 
+    // Orbit rings with coloured satellites
     for (let k = 0; k < 2; k++) {
       ctx.save();
       ctx.translate(W / 2, H / 2);
       ctx.rotate(time * (k ? -0.002 : 0.0015) + k * 1.1);
       ctx.scale(1, 0.28);
-      ctx.strokeStyle = "rgba(0,0,0,0.12)";
-      ctx.lineWidth = 1;
+      ctx.strokeStyle = k ? "rgba(139,92,246,0.35)" : "rgba(6,182,212,0.4)";
+      ctx.lineWidth = 1.2;
       ctx.setLineDash(k ? [2, 6] : []);
       ctx.beginPath(); ctx.arc(0, 0, R * (1.3 + k * 0.18), 0, Math.PI * 2); ctx.stroke();
       ctx.setLineDash([]);
-      // Satellite position on the ring, drawn without the vertical squash
       const ang = time * (k ? -0.012 : 0.009);
       const m = ctx.getTransform();
       const pt = m.transformPoint(new DOMPoint(Math.cos(ang) * R * (1.3 + k * 0.18), Math.sin(ang) * R * (1.3 + k * 0.18)));
       ctx.restore();
-      ctx.fillStyle = k ? "rgba(" + ACCENT + ",0.9)" : "rgba(0,0,0,0.75)";
-      ctx.beginPath(); ctx.arc(pt.x / dpr, pt.y / dpr, 3.5, 0, Math.PI * 2); ctx.fill();
+      ball(pt.x / dpr, pt.y / dpr, 5, k ? "139,92,246" : "6,182,212", 1);
     }
 
-    const P = nodes.map(n => project(n, cy, sy, cx, sx, breathe));
+    const P = nodes.map(pr);
 
-    // Links
+    // Back hemisphere links and nodes (seen through the glassy globe)
     ctx.lineWidth = 1;
     for (const [i, j] of links) {
       const a = P[i], b = P[j];
-      const al = depthAlpha((a.z + b.z) / 2) * 0.45;
-      ctx.strokeStyle = "rgba(0,0,0," + al.toFixed(3) + ")";
+      if ((a.z + b.z) / 2 >= 0) continue;
+      ctx.strokeStyle = "rgba(" + nodes[i].c + "," + (0.12 + (a.z + b.z) * 0.03 + 0.06).toFixed(3) + ")";
       ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
     }
+    P.forEach((p, i) => { if (p.z < 0) ball(p.x, p.y, (1.6 + (p.z + 1) * 1.2) * p.f, nodes[i].c, 0.35); });
 
-    // Backbone arcs
+    // Glass globe body with light from the top-left
+    g = ctx.createRadialGradient(W / 2 - Rs * 0.4, H / 2 - Rs * 0.45, Rs * 0.05, W / 2, H / 2, Rs);
+    g.addColorStop(0, "rgba(255,255,255,0.80)");
+    g.addColorStop(0.55, "rgba(236,244,255,0.62)");
+    g.addColorStop(1, "rgba(186,214,250,0.55)");
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(W / 2, H / 2, Rs, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = "rgba(37,99,235,0.35)"; ctx.lineWidth = 1.2; ctx.stroke(); ctx.lineWidth = 1;
+
+    // Latitude / longitude grid (front side only)
+    ctx.strokeStyle = "rgba(37,99,235,0.13)";
+    const drawLine = pts => {
+      ctx.beginPath(); let on = false;
+      for (const q of pts) { if (q.z < 0) { on = false; continue; } on ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y); on = true; }
+      ctx.stroke();
+    };
+    for (let lat = -60; lat <= 60; lat += 30) {
+      const y = Math.sin(lat * Math.PI / 180), r = Math.cos(lat * Math.PI / 180), pts = [];
+      for (let a = 0; a <= 64; a++) { const t = a / 64 * Math.PI * 2; pts.push(pr({ x: Math.cos(t) * r, y, z: Math.sin(t) * r })); }
+      drawLine(pts);
+    }
+    for (let lon = 0; lon < 180; lon += 30) {
+      const t0 = lon * Math.PI / 180, pts = [];
+      for (let a = 0; a <= 64; a++) { const t = a / 64 * Math.PI * 2; pts.push(pr({ x: Math.cos(t) * Math.cos(t0), y: Math.sin(t), z: Math.cos(t) * Math.sin(t0) })); }
+      drawLine(pts);
+    }
+
+    // Front links with colour gradients
+    ctx.lineWidth = 1.1;
+    for (const [i, j] of links) {
+      const a = P[i], b = P[j];
+      if ((a.z + b.z) / 2 < 0) continue;
+      const al = (depthAlpha((a.z + b.z) / 2) * 0.75).toFixed(3);
+      const lg = ctx.createLinearGradient(a.x, a.y, b.x, b.y);
+      lg.addColorStop(0, "rgba(" + nodes[i].c + "," + al + ")");
+      lg.addColorStop(1, "rgba(" + nodes[j].c + "," + al + ")");
+      ctx.strokeStyle = lg;
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+    }
+    ctx.lineWidth = 1;
+
+    // Backbone arcs above the surface
     for (const [i, j] of arcs) {
       ctx.beginPath();
       for (let s = 0; s <= 24; s++) {
-        const q = project(arcPoint(nodes[i], nodes[j], s / 24, 0.22), cy, sy, cx, sx, breathe);
+        const q = pr(arcPoint(nodes[i], nodes[j], s / 24, 0.22));
         s ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y);
       }
-      ctx.strokeStyle = "rgba(" + ACCENT + ",0.22)";
+      ctx.strokeStyle = "rgba(139,92,246,0.35)";
       ctx.setLineDash([3, 5]);
       ctx.stroke();
       ctx.setLineDash([]);
     }
 
-    // Nodes (back to front)
-    const order = P.map((p, i) => i).sort((a, b) => P[a].z - P[b].z);
+    // Front nodes as lit spheres with pulsing rings
+    const order = P.map((p, i) => i).filter(i => P[i].z >= 0).sort((a, b) => P[a].z - P[b].z);
     for (const i of order) {
       const p = P[i], n = nodes[i];
-      const al = depthAlpha(p.z);
-      const size = (1.4 + (p.z + 1) * 1.3) * p.f;
+      const size = (n.hub ? 3.4 : 2) * (0.8 + p.z * 0.6) * p.f;
       const pulse = (Math.sin(time * 0.05 + n.pulse) + 1) / 2;
-      if (p.z > 0.2) {
-        ctx.strokeStyle = "rgba(0,0,0," + (0.18 * pulse * al).toFixed(3) + ")";
-        ctx.beginPath(); ctx.arc(p.x, p.y, size + 3 + pulse * 4, 0, Math.PI * 2); ctx.stroke();
+      if (n.hub || p.z > 0.5) {
+        ctx.strokeStyle = "rgba(" + n.c + "," + (0.45 * pulse).toFixed(3) + ")";
+        ctx.beginPath(); ctx.arc(p.x, p.y, size + 3 + pulse * 6, 0, Math.PI * 2); ctx.stroke();
       }
-      ctx.fillStyle = "rgba(17,17,17," + al.toFixed(3) + ")";
-      ctx.beginPath(); ctx.arc(p.x, p.y, size, 0, Math.PI * 2); ctx.fill();
+      ball(p.x, p.y, size, n.c, 1);
     }
 
-    // Packets
+    // Packets with glowing trails
     for (let k = packets.length - 1; k >= 0; k--) {
       const pk = packets[k];
       pk.t += reduceMotion ? 0 : pk.speed;
       if (pk.t >= 1) { packets.splice(k, 1); spawn(); continue; }
-      const a = nodes[pk.a], b = nodes[pk.b];
-      for (let tail = 0; tail < 6; tail++) {
+      const a = nodes[pk.a], b = nodes[pk.b], col = a.c;
+      for (let tail = 5; tail >= 0; tail--) {
         const tt = Math.max(0, pk.t - tail * 0.025);
-        const q = project(pk.arc ? arcPoint(a, b, tt, 0.22) : arcPoint(a, b, tt, 0), cy, sy, cx, sx, breathe);
-        const al = depthAlpha(q.z) * (1 - tail / 6);
-        ctx.fillStyle = "rgba(" + ACCENT + "," + al.toFixed(3) + ")";
-        ctx.beginPath(); ctx.arc(q.x, q.y, (2.6 - tail * 0.35) * q.f, 0, Math.PI * 2); ctx.fill();
+        const q = pr(pk.arc ? arcPoint(a, b, tt, 0.22) : arcPoint(a, b, tt, 0));
+        if (q.z < -0.15) continue;
+        const al = Math.max(0.15, depthAlpha(q.z)) * (1 - tail / 6);
+        if (tail === 0) {
+          ctx.fillStyle = "rgba(" + col + "," + (0.25 * al).toFixed(3) + ")";
+          ctx.beginPath(); ctx.arc(q.x, q.y, 7 * q.f, 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.fillStyle = "rgba(" + col + "," + al.toFixed(3) + ")";
+        ctx.beginPath(); ctx.arc(q.x, q.y, (2.8 - tail * 0.35) * q.f, 0, Math.PI * 2); ctx.fill();
       }
     }
 

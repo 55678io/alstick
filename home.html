@@ -13,7 +13,7 @@
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 <script src="onesignal.js?v=8"></script>
 <link rel="stylesheet" href="app.css?v=11">
-<link rel="stylesheet" href="report.css?v=1">
+<link rel="stylesheet" href="report.css?v=2">
 <style>
   main.home { padding: 0; display: block; }
   .hero { position: relative; height: 56vh; min-height: 340px; border-bottom: 1px solid #000; }
@@ -27,13 +27,13 @@
   .s-label { font-size: 10px; letter-spacing: .8px; color: #666; }
   .s-value { font-size: 15px; font-weight: 700; margin-top: 4px; display: flex; align-items: center; gap: 6px; }
   .dot { width: 8px; height: 8px; border-radius: 50%; background: #bbb; }
-  .dot.ok { background: rgb(37,99,235); box-shadow: 0 0 0 4px rgba(37,99,235,.15); }
+  .dot.ok { background: #10b981; box-shadow: 0 0 0 4px rgba(16,185,129,.18); }
   .dot.bad { background: #dc2626; }
   .glance .stat canvas { height: 64px; }
   .glance .stat-value { font-size: 28px; }
   .links { display: grid; gap: 10px; }
   @media (min-width: 760px) { .links { grid-template-columns: repeat(3, 1fr); } }
-  .link-card { display: flex; align-items: center; justify-content: space-between; gap: 10px; border: 1px solid #000; border-radius: 14px; padding: 14px 16px; color: #111; text-decoration: none; background: #fff; }
+  .link-card { background: linear-gradient(120deg, rgba(37,99,235,0.07), #fff 60%) !important; display: flex; align-items: center; justify-content: space-between; gap: 10px; border: 1px solid #000; border-radius: 14px; padding: 14px 16px; color: #111; text-decoration: none; background: #fff; }
   .link-card:active { background: #f4f4f4; }
   .lc-title { font-weight: 700; font-size: 16px; }
   .lc-sub { font-size: 12px; color: #666; margin-top: 2px; }
@@ -68,8 +68,8 @@
 </main>
 <script src="app.js?v=11"></script>
 <script src="stats.js?v=1"></script>
-<script src="viz3d.js?v=2"></script>
-<script src="network.js?v=2"></script>
+<script src="viz3d.js?v=3"></script>
+<script src="network.js?v=3"></script>
 <script>
   // Network status (from the browser)
   const netDot = document.getElementById("netDot"), netText = document.getElementById("netText");
@@ -95,15 +95,15 @@
 
   // At a glance
   const S = window.ALSTICK_STATS;
-  const shapes = { H: ["cube"], V: ["octa", "red"], SL: null, A: ["icosa"] };
+  const shapes = { H: ["cube", "cyan"], V: ["octa", "rose"], SL: null, A: ["icosa", "violet"] };
   document.getElementById("glance").innerHTML = Object.keys(S).map(k =>
-    '<a class="stat" href="dailyreport.html" style="color:inherit;text-decoration:none"><canvas id="g-' + k + '"></canvas>' +
+    '<a class="stat c-' + k.toLowerCase() + '" href="dailyreport.html" style="text-decoration:none"><canvas id="g-' + k + '"></canvas>' +
     '<div class="stat-label mono">' + S[k].label + '</div>' +
     '<div class="stat-value mono">' + S[k].value + (S[k].unit ? "<small>" + S[k].unit + "</small>" : "") + "</div></a>"
   ).join("");
   Object.keys(S).forEach(k => {
     const c = document.getElementById("g-" + k);
-    if (shapes[k]) Viz.wire(c, shapes[k][0], shapes[k][1]); else Viz.gauge(c, S[k].value);
+    if (shapes[k]) Viz.wire(c, shapes[k][0], shapes[k][1]); else Viz.gauge(c, S[k].value, "green");
   });
 
   // Report periods
