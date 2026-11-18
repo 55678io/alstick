@@ -12,23 +12,15 @@
 <script>if (sessionStorage.getItem("alstick_ok") !== "1") location.replace("index.html");</script>
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 <script src="onesignal.js?v=8"></script>
-<link rel="stylesheet" href="app.css?v=10">
+<link rel="stylesheet" href="app.css?v=11">
+<link rel="stylesheet" href="report.css?v=1">
 </head>
 <body>
-<main>
-  <div class="page-title">Weekly Report</div>
-  <div class="page-sub" id="period"></div>
-  <div class="card"><div class="card-label">Calls</div><div class="card-value">&mdash;</div></div>
-  <div class="card"><div class="card-label">Talk time</div><div class="card-value">&mdash;</div></div>
-  <div class="card"><div class="card-label">Notes</div><div class="empty">No data yet.</div></div>
-</main>
-<script src="app.js?v=10"></script>
-<script>
-  const fmt = (d, o) => d.toLocaleDateString("en-US", o);
-  const now = new Date();
-  const start = new Date(now); start.setDate(now.getDate() - now.getDay());
-  const end = new Date(start); end.setDate(start.getDate() + 6);
-  document.getElementById("period").textContent = fmt(start, { month: "short", day: "numeric" }) + " – " + fmt(end, { month: "short", day: "numeric", year: "numeric" });
-</script>
+<main></main>
+<script src="app.js?v=11"></script>
+<script src="stats.js?v=1"></script>
+<script src="viz3d.js?v=2"></script>
+<script>window.REPORT_KIND = "weekly";</script>
+<script src="report.js?v=1"></script>
 </body>
 </html>

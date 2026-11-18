@@ -40,7 +40,7 @@
   for (let i = 0; i < 6; i++) {
     const a = Math.floor(Math.random() * N);
     let b = Math.floor(Math.random() * N);
-    if (b === a) b = (a + N / 2) | 0;
+    if (b === a) b = (a + (N >> 1)) % N;
     arcs.push([a, b]);
   }
 
