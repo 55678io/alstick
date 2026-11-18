@@ -44,6 +44,10 @@
     '<canvas id="scan" aria-label="Animated 3D network scan model"></canvas>' +
     '<div class="panel-foot mono"><span>LAYERS 3 · NODES 25</span><span id="scanPct">SCAN 0%</span></div></section>' +
 
+    '<section class="panel dark"><div class="panel-label mono">DATA CENTER \u00b7 3D SERVER RACKS</div>' +
+    '<canvas id="servers" aria-label="Animated 3D server racks"></canvas>' +
+    '<div class="panel-foot mono"><span>RACKS 6 \u00b7 COLD AISLE</span><span>DRAG TO ROTATE</span></div></section>' +
+
     '<section class="stats">' + tile("H", "w-h") + tile("V", "w-v") + tile("SL", "w-sl") + tile("A", "w-a") + "</section>" +
 
     '<section class="panel"><div class="panel-title mono">3D METRICS MODEL</div>' +
@@ -52,6 +56,7 @@
 
   // 3D visuals
   Viz.scanModel(document.getElementById("scan"));
+  Viz.serverRoom(document.getElementById("servers"));
   Viz.wire(document.getElementById("w-h"), "cube", "cyan");
   Viz.wire(document.getElementById("w-v"), "octa", "rose");
   Viz.gauge(document.getElementById("w-sl"), S.SL.value, "green");

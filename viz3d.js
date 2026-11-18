@@ -373,5 +373,189 @@
     });
   }
 
-  window.Viz = { scanModel, wire, gauge, bars };
+  // ---------- realistic 3D data-centre: server racks, LEDs, cable trays ----------
+  function serverRoom(canvas, opts) {
+    opts = opts || {};
+    const ROWS = [-0.78, 0.78], COLS = opts.cols || [-1.25, 0, 1.25];
+    const UNITS = 11;
+    const racks = [];
+    ROWS.forEach((z, ri) => COLS.forEach((x, ci) => racks.push({
+      x, z, w: 0.3, d: 0.34, h: 1.55, name: String.fromCharCode(65 + ri) + "0" + (ci + 1),
+      // front faces the cold aisle in the middle
+      facing: ri === 0 ? 1 : -1,
+      units: Array.from({ length: UNITS }, (_, u) => ({
+        kind: [0, 0, 1, 0, 2, 0, 1, 0, 0, 3, 0][(u + ci * 2 + ri * 3) % 11],
+        ph: Math.random() * 10, rate: 0.05 + Math.random() * 0.25,
+      })),
+    })));
+    // cross-aisle cables between racks (overhead)
+    const cables = [];
+    racks.forEach((a, i) => racks.forEach((b, j) => {
+      if (j > i && a.z !== b.z && Math.abs(a.x - b.x) < 1.3) cables.push({ a, b, c: [COLORS.cyan, COLORS.blue, COLORS.violet][(i + j) % 3] });
+    }));
+    const packets = cables.map((c, k) => ({ c, t: Math.random(), sp: 0.006 + Math.random() * 0.008 }));
+
+    let yaw = 0.55, drag = false, lx = 0, vel = 0.0022;
+    canvas.addEventListener("pointerdown", e => { drag = true; lx = e.clientX; canvas.setPointerCapture(e.pointerId); });
+    canvas.addEventListener("pointermove", e => { if (drag) { vel = (e.clientX - lx) * 0.006; yaw += vel; lx = e.clientX; } });
+    const up = () => { drag = false; };
+    canvas.addEventListener("pointerup", up);
+    canvas.addEventListener("pointercancel", up);
+
+    const LIGHT = (() => { const v = [-0.45, 0.8, 0.55], l = Math.hypot(...v); return v.map(c => c / l); })();
+    const shadeOf = n => 0.38 + 0.62 * Math.max(0, n[0] * LIGHT[0] + n[1] * LIGHT[1] + n[2] * LIGHT[2]);
+
+    loop(canvas, s => {
+      const { ctx, W, H, t } = s;
+      if (!drag) { yaw += vel; vel += (0.0022 - vel) * 0.03; }
+      const pitch = 0.5;
+      const scale = Math.min(W * 0.19, H * 0.24);
+      const proj = makeProjector(s, yaw, pitch, scale, W / 2, H * 0.68, 7);
+      const cyw = Math.cos(yaw), syw = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
+      const facesCam = n => { const z1 = n[0] * syw + n[2] * cyw; return n[1] * sp + z1 * cp > 0.02; };
+      const poly = (pts, fill, stroke) => {
+        const q = pts.map(proj);
+        ctx.beginPath(); q.forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y))); ctx.closePath();
+        if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+        if (stroke) { ctx.strokeStyle = stroke; ctx.stroke(); }
+        return q;
+      };
+
+      // Raised floor with perforated cold-aisle tiles
+      const FX = 2.0, FZ = 1.7, T = 0.34;
+      poly([{ x: -FX, y: 0, z: -FZ }, { x: FX, y: 0, z: -FZ }, { x: FX, y: 0, z: FZ }, { x: -FX, y: 0, z: FZ }], "#eef1f5");
+      for (let x = -FX; x < FX - 1e-6; x += T) for (let z = -FZ; z < FZ - 1e-6; z += T) {
+        const cold = Math.abs(z + T / 2) < 0.4;
+        poly([{ x, y: 0, z }, { x: x + T, y: 0, z }, { x: x + T, y: 0, z: z + T }, { x, y: 0, z: z + T }],
+          cold ? "rgba(6,182,212," + (0.10 + 0.05 * Math.sin(t * 0.04 + x * 2)).toFixed(3) + ")" : null, "rgba(120,130,150,0.22)");
+      }
+
+      // Soft contact shadows
+      racks.forEach(r => {
+        poly([{ x: r.x - r.w - 0.08, y: 0.001, z: r.z - r.d - 0.08 }, { x: r.x + r.w + 0.1, y: 0.001, z: r.z - r.d - 0.08 },
+              { x: r.x + r.w + 0.1, y: 0.001, z: r.z + r.d + 0.1 }, { x: r.x - r.w - 0.08, y: 0.001, z: r.z + r.d + 0.1 }], "rgba(15,23,42,0.16)");
+      });
+
+      // Collect visible faces of every rack and paint back-to-front
+      const faces = [];
+      racks.forEach(r => {
+        const x0 = r.x - r.w, x1 = r.x + r.w, z0 = r.z - r.d, z1 = r.z + r.d, h = r.h;
+        const F = [
+          { n: [0, 0, 1], pts: [{ x: x0, y: 0, z: z1 }, { x: x1, y: 0, z: z1 }, { x: x1, y: h, z: z1 }, { x: x0, y: h, z: z1 }] },
+          { n: [0, 0, -1], pts: [{ x: x1, y: 0, z: z0 }, { x: x0, y: 0, z: z0 }, { x: x0, y: h, z: z0 }, { x: x1, y: h, z: z0 }] },
+          { n: [1, 0, 0], pts: [{ x: x1, y: 0, z: z1 }, { x: x1, y: 0, z: z0 }, { x: x1, y: h, z: z0 }, { x: x1, y: h, z: z1 }] },
+          { n: [-1, 0, 0], pts: [{ x: x0, y: 0, z: z0 }, { x: x0, y: 0, z: z1 }, { x: x0, y: h, z: z1 }, { x: x0, y: h, z: z0 }] },
+          { n: [0, 1, 0], pts: [{ x: x0, y: h, z: z1 }, { x: x1, y: h, z: z1 }, { x: x1, y: h, z: z0 }, { x: x0, y: h, z: z0 }] },
+        ];
+        F.forEach(f => {
+          if (!facesCam(f.n)) return;
+          const zs = f.pts.map(p => proj(p).z);
+          faces.push({ r, f, z: zs.reduce((a, b) => a + b, 0) / 4, front: f.n[2] === r.facing, back: f.n[2] === -r.facing });
+        });
+      });
+      faces.sort((a, b) => a.z - b.z);
+
+      faces.forEach(({ r, f, front, back }) => {
+        const sh = shadeOf(f.n);
+        const base = Math.round(34 * sh + 8), body = "rgb(" + base + "," + (base + 4) + "," + (base + 12) + ")";
+        poly(f.pts, body, "rgba(0,0,0,0.65)");
+        const zf = f.pts[0].z + f.n[2] * 0.002;
+        if (front) {
+          // server units
+          const uh = (r.h - 0.12) / UNITS, xl = r.x - r.w + 0.035, xr = r.x + r.w - 0.035;
+          const X = u => (r.facing > 0 ? u : -u); // mirror x so LEDs stay on the right when facing -z
+          r.units.forEach((u, k) => {
+            const y0 = 0.07 + k * uh + 0.01, y1 = y0 + uh - 0.02;
+            const col = ["#2c3340", "#343c4b", "#1f2632", "#3a3f4a"][u.kind];
+            const pts = [{ x: xl, y: y0, z: zf }, { x: xr, y: y0, z: zf }, { x: xr, y: y1, z: zf }, { x: xl, y: y1, z: zf }];
+            poly(pts, col, "rgba(255,255,255,0.06)");
+            const ym = (y0 + y1) / 2, cxr = r.x + X(r.w - 0.08);
+            if (u.kind === 1) { // storage: drive bays
+              for (let b = 0; b < 6; b++) {
+                const bx = r.x + X(-r.w + 0.07 + b * 0.065);
+                const a = proj({ x: bx, y: y0 + 0.012, z: zf }), c = proj({ x: bx, y: y1 - 0.012, z: zf });
+                ctx.strokeStyle = "rgba(160,170,190,0.35)"; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(c.x, c.y); ctx.stroke();
+                const on = Math.sin(t * (0.2 + b * 0.03) + u.ph + b) > 0.6;
+                const l = proj({ x: bx + X(0.02), y: y1 - 0.02, z: zf });
+                ctx.fillStyle = on ? "rgba(16,185,129,1)" : "rgba(16,185,129,0.25)";
+                ctx.fillRect(l.x - 1, l.y - 1, 2, 2);
+              }
+            } else if (u.kind === 2) { // switch: port row
+              for (let b = 0; b < 10; b++) {
+                const l = proj({ x: r.x + X(-r.w + 0.07 + b * 0.04), y: ym, z: zf });
+                const on = Math.sin(t * 0.3 + b * 1.7 + u.ph) > 0;
+                ctx.fillStyle = on ? "rgba(34,211,238,0.95)" : "rgba(34,211,238,0.25)";
+                ctx.fillRect(l.x - 1.2, l.y - 1, 2.4, 2);
+              }
+            } else { // server: vent slots
+              for (let b = 0; b < 5; b++) {
+                const a = proj({ x: r.x + X(-r.w + 0.07 + b * 0.05), y: ym, z: zf }), c = proj({ x: r.x + X(-r.w + 0.1 + b * 0.05), y: ym, z: zf });
+                ctx.strokeStyle = "rgba(0,0,0,0.5)"; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(c.x, c.y); ctx.stroke();
+              }
+            }
+            // status LEDs with glow
+            const blink = Math.sin(t * u.rate + u.ph) > -0.2;
+            const leds = [[0, u.kind === 3 && Math.sin(t * 0.02 + u.ph) > 0.7 ? "245,158,11" : "16,185,129", blink], [0.045, "59,130,246", true]];
+            leds.forEach(([dx, c, on]) => {
+              const l = proj({ x: cxr - X(dx), y: ym, z: zf });
+              if (on) { ctx.fillStyle = "rgba(" + c + ",0.28)"; ctx.beginPath(); ctx.arc(l.x, l.y, 4.2 * l.f, 0, Math.PI * 2); ctx.fill(); }
+              ctx.fillStyle = "rgba(" + c + "," + (on ? 1 : 0.25) + ")";
+              ctx.beginPath(); ctx.arc(l.x, l.y, 1.6 * l.f, 0, Math.PI * 2); ctx.fill();
+            });
+          });
+          // glass door reflection
+          const q = f.pts.map(proj);
+          const g = ctx.createLinearGradient(q[0].x, q[3].y, q[1].x, q[0].y);
+          g.addColorStop(0, "rgba(255,255,255,0.16)"); g.addColorStop(0.45, "rgba(255,255,255,0.02)"); g.addColorStop(1, "rgba(255,255,255,0.08)");
+          ctx.beginPath(); q.forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y))); ctx.closePath();
+          ctx.fillStyle = g; ctx.fill();
+          // rack label
+          const lb = proj({ x: r.x, y: r.h - 0.03, z: zf });
+          ctx.font = "700 " + Math.max(8, 9 * lb.f) + "px ui-monospace, Menlo, monospace";
+          ctx.textAlign = "center"; ctx.fillStyle = "rgba(226,232,240,0.85)"; ctx.fillText(r.name, lb.x, lb.y + 1); ctx.textAlign = "left";
+        } else if (back) {
+          for (let k = 1; k < 14; k++) {
+            const y = (k / 14) * r.h;
+            const a = proj({ x: r.x - r.w + 0.05, y, z: zf }), c = proj({ x: r.x + r.w - 0.05, y, z: zf });
+            ctx.strokeStyle = "rgba(0,0,0,0.35)"; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(c.x, c.y); ctx.stroke();
+          }
+        } else if (f.n[1] === 1) {
+          // top: fan grilles
+          [-0.13, 0.13].forEach(dx => {
+            ring2(ctx, proj, r.x + dx, r.h + 0.001, r.z, 0.08);
+            ctx.strokeStyle = "rgba(255,255,255,0.18)"; ctx.stroke();
+          });
+        }
+      });
+
+      // Drop cables from each rack to the overhead fibre runs
+      racks.forEach(r => {
+        const a = proj({ x: r.x, y: r.h, z: r.z }), b = proj({ x: r.x, y: 1.85, z: r.z });
+        ctx.strokeStyle = "rgba(30,41,59,0.75)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); ctx.lineWidth = 1;
+      });
+      // Cross-aisle fibre runs with travelling light
+      const arc = (c, u) => ({ x: c.a.x + (c.b.x - c.a.x) * u, y: 1.85 + Math.sin(Math.PI * u) * 0.28, z: c.a.z + (c.b.z - c.a.z) * u });
+      cables.forEach(c => {
+        ctx.beginPath();
+        for (let k = 0; k <= 20; k++) { const q = proj(arc(c, k / 20)); k ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y); }
+        ctx.strokeStyle = "rgba(" + c.c + ",0.55)"; ctx.lineWidth = 1.6; ctx.stroke(); ctx.lineWidth = 1;
+      });
+      packets.forEach(pk => {
+        pk.t += pk.sp * (reduceMotion ? 0.2 : 1); if (pk.t > 1) pk.t -= 1;
+        const q = proj(arc(pk.c, pk.t));
+        ctx.fillStyle = "rgba(" + pk.c.c + ",0.25)"; ctx.beginPath(); ctx.arc(q.x, q.y, 6 * q.f, 0, Math.PI * 2); ctx.fill();
+        ball(ctx, q.x, q.y, 2.4 * q.f, pk.c.c, 1);
+      });
+    });
+  }
+
+  function ring2(ctx, proj, cx, y, cz, r) {
+    ctx.beginPath();
+    for (let i = 0; i <= 24; i++) {
+      const a = (i / 24) * Math.PI * 2, q = proj({ x: cx + Math.cos(a) * r, y, z: cz + Math.sin(a) * r });
+      i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y);
+    }
+  }
+
+  window.Viz = { scanModel, wire, gauge, bars, serverRoom };
 })();
