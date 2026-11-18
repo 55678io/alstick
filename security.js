@@ -52,7 +52,7 @@
       card("H", "sec-h", "img/soc.jpg", "HACKER DETECTION", "ACTIVE", "Hacker attempts detected") +
       card("V", "sec-v", "img/virus.jpg", "VIRUS SCAN &amp; REMOVAL", "SCANNING", "Viruses found &amp; removed") +
       card("SL", "sec-sl", "img/shield.jpg", "SECURITY HARDENING", "IN PROGRESS", "Security level, increasing") +
-      card("A", "sec-a", "img/datacenter.jpg", "NETWORK ACTIVITY", "LIVE", "&nbsp;");
+      card("A", "sec-a", "img/datacenter.jpg", "ACCESS ATTEMPTS", "LIVE", "Attempts recorded");
     root.querySelectorAll("[data-to]").forEach(el => countUp(el, +el.dataset.to, 1400));
     const [h, v, sl, a] = root.querySelectorAll(".sec");
     hackerDetection(h); virusScan(v); hardening(sl); activity(a);
