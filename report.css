@@ -46,3 +46,36 @@
 
 #servers { height: 360px; }
 .panel.dark { background: radial-gradient(120% 90% at 50% 10%, #f8fbff, #e9eef6 70%); }
+
+/* ---------- Live security modules ---------- */
+.sec-grid { display: grid; grid-template-columns: 1fr; gap: 14px; margin-bottom: 14px; }
+@media (min-width: 860px) { .sec-grid { grid-template-columns: 1fr 1fr; } }
+.sec {
+  --acc: 34,211,238;
+  position: relative; overflow: hidden; border-radius: 16px; border: 1px solid #000; color: #e2e8f0;
+  background:
+    linear-gradient(180deg, rgba(2,6,23,0.70) 0%, rgba(2,6,23,0.82) 55%, rgba(2,6,23,0.94) 100%),
+    var(--img) center / cover no-repeat, #0b1220;
+  box-shadow: 0 10px 30px rgba(2,6,23,0.18);
+}
+.sec-v  { --acc: 248,113,113; }
+.sec-sl { --acc: 52,211,153; }
+.sec-a  { --acc: 129,140,248; }
+.sec-top { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px 0; }
+.sec-title { font-size: 11px; font-weight: 800; letter-spacing: 1.2px; color: #f8fafc; }
+.sec-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 700; letter-spacing: 1px;
+  padding: 3px 8px; border-radius: 999px; border: 1px solid rgba(var(--acc),0.6); color: rgb(var(--acc)); background: rgba(var(--acc),0.10); }
+.sec-chip i { width: 6px; height: 6px; border-radius: 50%; background: rgb(var(--acc)); box-shadow: 0 0 8px rgb(var(--acc)); animation: blink 1.2s infinite; }
+.sec-body { display: flex; align-items: stretch; gap: 8px; padding: 6px 10px 0; }
+.sec-canvas { flex: 1.5; min-width: 0; height: 190px; display: block; }
+.sec-num { flex: 1; display: flex; flex-direction: column; justify-content: center; padding-right: 6px; }
+.sec-k { font-size: 10px; letter-spacing: 1px; color: #94a3b8; text-transform: uppercase; }
+.sec-val { font-size: 46px; font-weight: 800; line-height: 1; color: rgb(var(--acc)); text-shadow: 0 0 18px rgba(var(--acc),0.45); margin: 4px 0; }
+.sec-val small { font-size: 22px; margin-left: 2px; }
+.sec-cap { font-size: 12px; color: #cbd5e1; line-height: 1.35; }
+.sec-log { margin: 8px 12px 12px; padding: 8px 10px; height: 76px; overflow: hidden; border-radius: 8px;
+  background: rgba(2,6,23,0.6); border: 1px solid rgba(148,163,184,0.18); font-size: 10.5px; line-height: 1.6; color: #94a3b8; }
+.log-line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; animation: logIn .35s ease; }
+.log-line.bad { color: #fca5a5; }
+.log-line.ok  { color: #6ee7b7; }
+@keyframes logIn { from { opacity: 0; transform: translateY(-4px); } }

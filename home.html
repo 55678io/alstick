@@ -13,7 +13,7 @@
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 <script src="onesignal.js?v=8"></script>
 <link rel="stylesheet" href="app.css?v=11">
-<link rel="stylesheet" href="report.css?v=3">
+<link rel="stylesheet" href="report.css?v=5">
 <style>
   main.home { padding: 0; display: block; }
   .hero { position: relative; height: 56vh; min-height: 340px; border-bottom: 1px solid #000; }
@@ -60,8 +60,8 @@
       <canvas id="servers" aria-label="Animated 3D server racks"></canvas>
       <div class="panel-foot mono"><span>RACKS 6 &middot; COLD AISLE</span><span>DRAG TO ROTATE</span></div></section>
 
-    <div class="sec-title mono">AT A GLANCE</div>
-    <section class="stats glance" id="glance"></section>
+    <div class="sec-title mono">LIVE SECURITY</div>
+    <section id="secmods"></section>
 
     <div class="sec-title mono">REPORTS</div>
     <div class="links">
@@ -75,6 +75,7 @@
 <script src="stats.js?v=1"></script>
 <script src="viz3d.js?v=4"></script>
 <script src="network.js?v=3"></script>
+<script src="security.js?v=2"></script>
 <script>
   // Network status (from the browser)
   const netDot = document.getElementById("netDot"), netText = document.getElementById("netText");
@@ -98,18 +99,8 @@
   const tick = () => { clock.textContent = new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }); };
   tick(); setInterval(tick, 10000);
 
-  // At a glance
-  const S = window.ALSTICK_STATS;
-  const shapes = { H: ["cube", "cyan"], V: ["octa", "rose"], SL: null, A: ["icosa", "violet"] };
-  document.getElementById("glance").innerHTML = Object.keys(S).map(k =>
-    '<a class="stat c-' + k.toLowerCase() + '" href="dailyreport.html" style="text-decoration:none"><canvas id="g-' + k + '"></canvas>' +
-    '<div class="stat-label mono">' + S[k].label + '</div>' +
-    '<div class="stat-value mono">' + S[k].value + (S[k].unit ? "<small>" + S[k].unit + "</small>" : "") + "</div></a>"
-  ).join("");
-  Object.keys(S).forEach(k => {
-    const c = document.getElementById("g-" + k);
-    if (shapes[k]) Viz.wire(c, shapes[k][0], shapes[k][1]); else Viz.gauge(c, S[k].value, "green");
-  });
+  // Live security modules
+  Sec.mount(document.getElementById("secmods"));
 
   Viz.serverRoom(document.getElementById("servers"));
 
